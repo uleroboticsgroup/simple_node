@@ -65,7 +65,7 @@ class Node(Node2):
 
         return super().create_client(srv_type, srv_name, callback_group=ReentrantCallbackGroup())
 
-    def create_action_client(self, action_type, action_name: str) -> ActionClient:
+    def create_action_client(self, action_type, action_name: str, feedback_cb: Callable = None) -> ActionClient:
         """ create action client from node
 
         Args:
@@ -76,7 +76,7 @@ class Node(Node2):
             ActionClient: client created
         """
 
-        return ActionClient(self, action_type, action_name)
+        return ActionClient(self, action_type, action_name, feedback_cb)
 
     def create_action_server(self,
                              action_type,

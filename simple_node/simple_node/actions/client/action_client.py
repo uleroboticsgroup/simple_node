@@ -1,4 +1,5 @@
 
+from typing import Callable
 import time
 from threading import Thread, Lock
 from action_msgs.msg import GoalStatus
@@ -9,12 +10,13 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 class ActionClient(ActionClient2):
 
-    def __init__(self, node: Node, action_type, action_name: str):
+    def __init__(self, node: Node, action_type, action_name: str, feedback_cb: Callable = None):
         self._status = GoalStatus.STATUS_UNKNOWN
         self.__status_lock = Lock()
         self.__goal_handle = None
         self.__goal_thread = None
         self.__result = None
+        self.feedback_cb = feedback_cb
         super().__init__(node, action_type, action_name,
                          callback_group=ReentrantCallbackGroup())
 
@@ -56,11 +58,12 @@ class ActionClient(ActionClient2):
     def get_result(self):
         return self.__result
 
-    def __send_goal(self, goal):
+    def __send_goal(self, goal, feedback_cb: Callable = None):
 
         self.__result = None
 
-        send_goal_future = self.send_goal_async(goal)
+        send_goal_future = self.send_goal_async(
+            goal, feedback_callback=feedback_cb)
 
         # wait for acceptance
         while not send_goal_future.done():
@@ -100,8 +103,15 @@ class ActionClient(ActionClient2):
         self._set_status(get_result_future.result().status)
         self.__result = get_result_future.result().result
 
-    def send_goal(self, goal):
-        self.__goal_thread = Thread(target=self.__send_goal, args=(goal,))
+    def send_goal(self, goal, feedback_cb: Callable = None):
+
+        _feedback_cb = self.feedback_cb
+
+        if not feedback_cb is None:
+            _feedback_cb = feedback_cb
+
+        self.__goal_thread = Thread(
+            target=self.__send_goal, args=(goal, _feedback_cb))
         self._set_status(GoalStatus.STATUS_UNKNOWN)
         self.__goal_thread.start()
 

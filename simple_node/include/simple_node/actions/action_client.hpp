@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <future>
+#include <memory>
 #include <string>
 #include <thread>
 
@@ -20,11 +21,15 @@ template <typename ActionT>
 class ActionClient : public rclcpp_action::Client<ActionT> {
 
   using Goal = typename ActionT::Goal;
+  using Feedback = typename ActionT::Feedback;
   using GoalHandle = rclcpp_action::ClientGoalHandle<ActionT>;
   using Result = typename GoalHandle::Result::SharedPtr;
+  using FeedbackCallback = std::function<void(
+      typename GoalHandle::SharedPtr, const std::shared_ptr<const Feedback>)>;
 
 public:
-  ActionClient(rclcpp::Node *node, std::string action_name)
+  ActionClient(rclcpp::Node *node, std::string action_name,
+               FeedbackCallback feedback_cb = nullptr)
       : rclcpp_action::Client<ActionT>(
             node->get_node_base_interface(), node->get_node_graph_interface(),
             node->get_node_logging_interface(), action_name) {
@@ -34,6 +39,7 @@ public:
     this->goal_handle = nullptr;
     this->goal_thread = nullptr;
     this->result = nullptr;
+    this->feedback_cb = feedback_cb;
   }
 
   ~ActionClient() { delete this->goal_thread; }
@@ -42,9 +48,17 @@ public:
 
   Result get_result() { return this->result; }
 
-  void send_goal(Goal goal) {
+  void send_goal(Goal goal, FeedbackCallback feedback_cb = nullptr) {
+
+    FeedbackCallback _feedback_cb = this->feedback_cb;
+
+    if (feedback_cb != nullptr) {
+      _feedback_cb = feedback_cb;
+    }
+
     this->set_status(action_msgs::msg::GoalStatus::STATUS_UNKNOWN);
-    this->goal_thread = new std::thread(&ActionClient::_send_goal, this, goal);
+    this->goal_thread =
+        new std::thread(&ActionClient::_send_goal, this, goal, _feedback_cb);
   }
 
   bool cancel_goal() {
@@ -102,17 +116,22 @@ private:
   std::thread *goal_thread;
   Result result;
   std::shared_ptr<GoalHandle> goal_handle;
+  FeedbackCallback feedback_cb;
 
   void set_status(int8_t status) {
     const std::lock_guard<std::mutex> lock(this->status_mtx);
     this->status = status;
   }
 
-  void _send_goal(Goal goal) {
+  void _send_goal(Goal goal, FeedbackCallback feedback_cb) {
 
     this->result = nullptr;
 
-    auto send_goal_future = this->async_send_goal(goal);
+    auto send_goal_options =
+        typename rclcpp_action::Client<ActionT>::SendGoalOptions();
+    send_goal_options.feedback_callback = feedback_cb;
+
+    auto send_goal_future = this->async_send_goal(goal, send_goal_options);
 
     // wait for acceptance
     while (send_goal_future.wait_for(std::chrono::seconds(1)) !=

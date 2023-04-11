@@ -27,13 +27,17 @@ public:
   void join_spin();
 
   template <typename ActionT>
-  typename std::shared_ptr<actions::ActionClient<ActionT>>
-  create_action_client(std::string action_name) {
+  typename std::shared_ptr<actions::ActionClient<ActionT>> create_action_client(
+      std::string action_name,
+      std::function<
+          void(typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr,
+               const std::shared_ptr<const typename ActionT::Feedback>)>
+          feedback_cb = nullptr) {
 
     rclcpp::CallbackGroup::SharedPtr group = nullptr;
 
     std::shared_ptr<actions::ActionClient<ActionT>> action_client(
-        new actions::ActionClient<ActionT>(this, action_name),
+        new actions::ActionClient<ActionT>(this, action_name, feedback_cb),
         this->create_action_deleter<rclcpp_action::Client<ActionT>>(group));
 
     this->get_node_waitables_interface()->add_waitable(action_client, group);
