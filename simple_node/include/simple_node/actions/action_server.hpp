@@ -71,7 +71,7 @@ public:
 
   void wait_for_canceling() {
     if (this->server_canceled && this->goal_handle != nullptr) {
-      while (!this->goal_handle->is_cancel_requested()) {
+      while (!this->goal_handle->is_canceling()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
       }
     }
