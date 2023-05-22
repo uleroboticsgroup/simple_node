@@ -101,21 +101,32 @@ private:
 
   rclcpp_action::CancelResponse
   handle_cancel(const std::shared_ptr<GoalHandle> goal_handle) {
-
     (void)goal_handle;
-
-    this->server_canceled = true;
-
-    if (this->cancel_callback != nullptr) {
-      this->cancel_callback();
-    }
-
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
   void handle_execute(const std::shared_ptr<GoalHandle> goal_handle) {
+
     this->goal_handle = goal_handle;
     this->server_canceled = false;
+
+    using namespace std::placeholders;
+    std::thread{std::bind(&ActionServer::execute, this, _1), goal_handle}
+        .detach();
+
+    while (this->goal_handle != nullptr) {
+      if (this->goal_handle->is_canceling()) {
+
+        if (this->cancel_callback != nullptr) {
+          this->cancel_callback();
+        }
+        this->server_canceled = true;
+        break;
+      }
+    }
+  }
+
+  void execute(const std::shared_ptr<GoalHandle> goal_handle) {
     this->execute_callback(goal_handle);
     this->goal_handle = nullptr;
   }
