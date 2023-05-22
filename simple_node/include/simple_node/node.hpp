@@ -117,6 +117,28 @@ public:
     return action_server;
   }
 
+  template <typename ServiceT>
+  typename rclcpp::Client<ServiceT>::SharedPtr
+  create_client(const std::string &service_name,
+                const rmw_qos_profile_t &qos_profile) {
+    return rclcpp::create_client<ServiceT>(
+        node_base_, node_graph_, node_services_,
+        rclcpp::extend_name_with_sub_namespace(service_name,
+                                               this->get_sub_namespace()),
+        qos_profile, this->group);
+  }
+
+  template <typename ServiceT, typename CallbackT>
+  typename rclcpp::Service<ServiceT>::SharedPtr
+  create_service(const std::string &service_name, CallbackT &&callback,
+                 const rmw_qos_profile_t &qos_profile) {
+    return rclcpp::create_service<ServiceT, CallbackT>(
+        node_base_, node_services_,
+        rclcpp::extend_name_with_sub_namespace(service_name,
+                                               this->get_sub_namespace()),
+        std::forward<CallbackT>(callback), qos_profile, this->group);
+  }
+
 private:
   rclcpp::CallbackGroup::SharedPtr group;
   rclcpp::Executor *executor;
