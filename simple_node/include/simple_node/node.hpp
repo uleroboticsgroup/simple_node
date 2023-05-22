@@ -34,13 +34,12 @@ public:
                const std::shared_ptr<const typename ActionT::Feedback>)>
           feedback_cb = nullptr) {
 
-    rclcpp::CallbackGroup::SharedPtr group = nullptr;
-
     std::shared_ptr<actions::ActionClient<ActionT>> action_client(
         new actions::ActionClient<ActionT>(this, action_name, feedback_cb),
-        this->create_action_deleter<rclcpp_action::Client<ActionT>>(group));
+        this->create_action_deleter<rclcpp_action::Client<ActionT>>());
 
-    this->get_node_waitables_interface()->add_waitable(action_client, group);
+    this->get_node_waitables_interface()->add_waitable(action_client,
+                                                       this->group);
     return action_client;
   }
 
@@ -52,14 +51,13 @@ public:
           void(std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>>)>
           execute_callback) {
 
-    rclcpp::CallbackGroup::SharedPtr group = nullptr;
-
     std::shared_ptr<actions::ActionSingleServer<ActionT>> action_server(
         new actions::ActionSingleServer<ActionT>(this, action_name,
                                                  execute_callback),
-        this->create_action_deleter<rclcpp_action::Server<ActionT>>(group));
+        this->create_action_deleter<rclcpp_action::Server<ActionT>>());
 
-    this->get_node_waitables_interface()->add_waitable(action_server, group);
+    this->get_node_waitables_interface()->add_waitable(action_server,
+                                                       this->group);
     return action_server;
   }
 
@@ -72,14 +70,13 @@ public:
           execute_callback,
       std::function<void()> cancel_callback) {
 
-    rclcpp::CallbackGroup::SharedPtr group = nullptr;
-
     std::shared_ptr<actions::ActionSingleServer<ActionT>> action_server(
         new actions::ActionSingleServer<ActionT>(
             this, action_name, execute_callback, cancel_callback),
-        this->create_action_deleter<rclcpp_action::Server<ActionT>>(group));
+        this->create_action_deleter<rclcpp_action::Server<ActionT>>());
 
-    this->get_node_waitables_interface()->add_waitable(action_server, group);
+    this->get_node_waitables_interface()->add_waitable(action_server,
+                                                       this->group);
     return action_server;
   }
 
@@ -91,14 +88,13 @@ public:
           void(std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>>)>
           execute_callback) {
 
-    rclcpp::CallbackGroup::SharedPtr group = nullptr;
-
     std::shared_ptr<actions::ActionQueueServer<ActionT>> action_server(
         new actions::ActionQueueServer<ActionT>(this, action_name,
                                                 execute_callback),
-        this->create_action_deleter<rclcpp_action::Server<ActionT>>(group));
+        this->create_action_deleter<rclcpp_action::Server<ActionT>>());
 
-    this->get_node_waitables_interface()->add_waitable(action_server, group);
+    this->get_node_waitables_interface()->add_waitable(action_server,
+                                                       this->group);
     return action_server;
   }
 
@@ -111,34 +107,33 @@ public:
           execute_callback,
       std::function<void()> cancel_callback) {
 
-    rclcpp::CallbackGroup::SharedPtr group = nullptr;
-
     std::shared_ptr<actions::ActionQueueServer<ActionT>> action_server(
         new actions::ActionQueueServer<ActionT>(
             this, action_name, execute_callback, cancel_callback),
-        this->create_action_deleter<rclcpp_action::Server<ActionT>>(group));
+        this->create_action_deleter<rclcpp_action::Server<ActionT>>());
 
-    this->get_node_waitables_interface()->add_waitable(action_server, group);
+    this->get_node_waitables_interface()->add_waitable(action_server,
+                                                       this->group);
     return action_server;
   }
 
 private:
+  rclcpp::CallbackGroup::SharedPtr group;
   rclcpp::Executor *executor;
   std::thread *spin_thread;
 
   void run_executor();
 
   template <typename TypeT>
-  std::function<void(TypeT *ptr)>
-  create_action_deleter(rclcpp::CallbackGroup::SharedPtr group) {
+  std::function<void(TypeT *ptr)> create_action_deleter() {
 
     rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr
         node_waitables_interface = this->get_node_waitables_interface();
 
     std::weak_ptr<rclcpp::node_interfaces::NodeWaitablesInterface> weak_node =
         node_waitables_interface;
-    std::weak_ptr<rclcpp::CallbackGroup> weak_group = group;
-    bool group_is_null = (nullptr == group.get());
+    std::weak_ptr<rclcpp::CallbackGroup> weak_group = this->group;
+    bool group_is_null = (nullptr == this->group.get());
 
     auto deleter = [weak_node, weak_group, group_is_null](TypeT *ptr) {
       if (nullptr == ptr) {

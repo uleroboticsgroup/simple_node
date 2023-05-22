@@ -15,6 +15,9 @@ Node::Node(std::string name, rclcpp::Executor *executor)
 Node::Node(std::string name, std::string _namespace, rclcpp::Executor *executor)
     : rclcpp::Node(name, _namespace) {
 
+  rclcpp::CallbackGroup::SharedPtr group =
+      this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
   this->executor = executor;
   this->spin_thread = new std::thread(&Node::run_executor, this);
 }
@@ -25,13 +28,11 @@ Node::~Node() {
 }
 
 void Node::join_spin() {
-
   this->spin_thread->join();
   RCLCPP_INFO(this->get_logger(), "Destroying node %s", this->get_name());
 }
 
 void Node::run_executor() {
-
   this->executor->add_node(this->get_node_base_interface());
   this->executor->spin();
 }
