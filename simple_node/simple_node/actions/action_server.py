@@ -69,7 +69,6 @@ class ActionServer(ActionServer2):
             execute callback
         """
 
-        self._goal_handle = goal_handle
 
         t = Thread(target=self.__execute)
         t.start()

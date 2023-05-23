@@ -104,7 +104,7 @@ private:
 
   void handle_execute(const std::shared_ptr<GoalHandle> goal_handle) {
 
-    this->goal_handle = goal_handle;
+    (void)goal_handle;
 
     std::thread(std::bind(&ActionServer::execute, this)).detach();
 
