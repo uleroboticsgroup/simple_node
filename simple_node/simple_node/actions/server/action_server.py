@@ -1,12 +1,16 @@
 
 """ Custom action server that add goals to a queue """
 
-from typing import Callable
 import time
+from typing import Callable
+from threading import Lock
+from threading import Thread
+
+from rclpy.node import Node
 from rclpy.action import ActionServer as ActionServer2
 from rclpy.action import CancelResponse, GoalResponse
+from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.node import Node
 
 
 class ActionServer(ActionServer2):
@@ -17,70 +21,69 @@ class ActionServer(ActionServer2):
                  action_type,
                  action_name: str,
                  execute_callback: Callable,
-                 handle_accepted_callback: Callable,
                  cancel_callback: Callable = None):
 
+        self.__goal_lock = Lock()
         self.__user_execute_callback = execute_callback
         self.__user_cancel_callback = cancel_callback
-        self.__server_canceled = False
         self._goal_handle = None
+        self.results = None
+        self.node = node
 
         super().__init__(node, action_type, action_name,
                          execute_callback=self.__execute_callback,
                          goal_callback=self.__goal_callback,
-                         handle_accepted_callback=handle_accepted_callback,
+                         handle_accepted_callback=self.__handle_accepted_callback,
                          cancel_callback=self.__cancel_callback,
                          callback_group=ReentrantCallbackGroup())
 
     def is_working(self) -> bool:
-        """ get if server is working
+        return self._goal_handle is not None
 
-        Returns:
-            bool: server working?
-        """
-
-        return not self._goal_handle is None
-
-    def is_canceled(self) -> bool:
-        """ get if server is canceled
-
-        Returns:
-            bool: server canceled?
-        """
-
-        return self.__server_canceled
-
-    def wait_for_canceling(self):
-        """
-            if server is canceled, wait for canceling state
-        """
-
-        if self.__server_canceled and self._goal_handle:
-            while not self._goal_handle.is_cancel_requested:
-                time.sleep(0.05)
-
-    def __goal_callback(self, goal_request):
+    def __goal_callback(self, goal_request) -> int:
         """ goal callback """
 
         return GoalResponse.ACCEPT
 
-    def __cancel_callback(self, goal_handle):
+    def __handle_accepted_callback(self, goal_handle: ServerGoalHandle) -> None:
+        """
+            handle accepted calback for a single goal server
+            only one goal can be treated
+            if other goal is send, old goal is aborted and replaced with the new one
+        """
+
+        with self.__goal_lock:
+            if self._goal_handle is not None and self._goal_handle.is_active:
+                self._goal_handle.abort()
+
+            self._goal_handle = goal_handle
+            self._goal_handle.execute()
+
+    def __cancel_callback(self, goal_handle: ServerGoalHandle) -> int:
         """ cancel calback """
-
-        self.__server_canceled = True
-
-        if self.__user_cancel_callback is not None:
-            self.__user_cancel_callback()
 
         return CancelResponse.ACCEPT
 
-    def __execute_callback(self, goal_handle):
+    def __execute_callback(self, goal_handle: ServerGoalHandle):
         """
             execute callback
         """
 
         self._goal_handle = goal_handle
-        self.__server_canceled = False
-        results = self.__user_execute_callback(goal_handle)
+
+        t = Thread(target=self.__execute)
+        t.start()
+
+        while t.is_alive():
+
+            if goal_handle.is_cancel_requested:
+                if self.__user_cancel_callback is not None:
+                    self.__user_cancel_callback()
+
+            time.sleep(1)
+
+        return self.results
+
+    def __execute(self) -> None:
+        self.results = self.__user_execute_callback(self._goal_handle)
         self._goal_handle = None
-        return results

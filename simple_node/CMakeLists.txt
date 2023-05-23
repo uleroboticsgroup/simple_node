@@ -29,8 +29,7 @@ set(LIB ${CMAKE_PROJECT_NAME}_lib)
 set(SOURCES
   src/simple_node/node.cpp
   src/simple_node/actions/action_client.cpp
-  src/simple_node/actions/action_queue_server.cpp
-  src/simple_node/actions/action_single_server.cpp
+  src/simple_node/actions/action_server.cpp
 )
 
 set(DEPENDENCIES

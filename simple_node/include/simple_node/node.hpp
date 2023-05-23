@@ -11,8 +11,7 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "simple_node/actions/action_client.hpp"
-#include "simple_node/actions/action_queue_server.hpp"
-#include "simple_node/actions/action_single_server.hpp"
+#include "simple_node/actions/action_server.hpp"
 
 namespace simple_node {
 
@@ -45,16 +44,14 @@ public:
   }
 
   template <typename ActionT>
-  typename std::shared_ptr<actions::ActionSingleServer<ActionT>>
-  create_action_server(
+  typename std::shared_ptr<actions::ActionServer<ActionT>> create_action_server(
       std::string action_name,
       std::function<
           void(std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>>)>
           execute_callback) {
 
-    std::shared_ptr<actions::ActionSingleServer<ActionT>> action_server(
-        new actions::ActionSingleServer<ActionT>(this, action_name,
-                                                 execute_callback),
+    std::shared_ptr<actions::ActionServer<ActionT>> action_server(
+        new actions::ActionServer<ActionT>(this, action_name, execute_callback),
         this->create_action_deleter<rclcpp_action::Server<ActionT>>());
 
     this->get_node_waitables_interface()->add_waitable(action_server,
@@ -63,54 +60,16 @@ public:
   }
 
   template <typename ActionT>
-  typename std::shared_ptr<actions::ActionSingleServer<ActionT>>
-  create_action_server(
+  typename std::shared_ptr<actions::ActionServer<ActionT>> create_action_server(
       std::string action_name,
       std::function<
           void(std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>>)>
           execute_callback,
       std::function<void()> cancel_callback) {
 
-    std::shared_ptr<actions::ActionSingleServer<ActionT>> action_server(
-        new actions::ActionSingleServer<ActionT>(
-            this, action_name, execute_callback, cancel_callback),
-        this->create_action_deleter<rclcpp_action::Server<ActionT>>());
-
-    this->get_node_waitables_interface()->add_waitable(action_server,
-                                                       this->group);
-    return action_server;
-  }
-
-  template <typename ActionT>
-  typename std::shared_ptr<actions::ActionQueueServer<ActionT>>
-  create_action_queue_server(
-      std::string action_name,
-      std::function<
-          void(std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>>)>
-          execute_callback) {
-
-    std::shared_ptr<actions::ActionQueueServer<ActionT>> action_server(
-        new actions::ActionQueueServer<ActionT>(this, action_name,
-                                                execute_callback),
-        this->create_action_deleter<rclcpp_action::Server<ActionT>>());
-
-    this->get_node_waitables_interface()->add_waitable(action_server,
-                                                       this->group);
-    return action_server;
-  }
-
-  template <typename ActionT>
-  typename std::shared_ptr<actions::ActionQueueServer<ActionT>>
-  create_action_queue_server(
-      std::string action_name,
-      std::function<
-          void(std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>>)>
-          execute_callback,
-      std::function<void()> cancel_callback) {
-
-    std::shared_ptr<actions::ActionQueueServer<ActionT>> action_server(
-        new actions::ActionQueueServer<ActionT>(
-            this, action_name, execute_callback, cancel_callback),
+    std::shared_ptr<actions::ActionServer<ActionT>> action_server(
+        new actions::ActionServer<ActionT>(this, action_name, execute_callback,
+                                           cancel_callback),
         this->create_action_deleter<rclcpp_action::Server<ActionT>>());
 
     this->get_node_waitables_interface()->add_waitable(action_server,

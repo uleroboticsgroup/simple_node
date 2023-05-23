@@ -14,8 +14,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 from .actions import (
     ActionClient,
-    ActionQueueServer,
-    ActionSingleServer
+    ActionServer
 )
 
 
@@ -62,7 +61,6 @@ class Node(Node2):
             self.destroy_node()
 
     def create_client(self, srv_type, srv_name: str) -> Client:
-
         return super().create_client(srv_type, srv_name, callback_group=ReentrantCallbackGroup())
 
     def create_action_client(self, action_type, action_name: str, feedback_cb: Callable = None) -> ActionClient:
@@ -82,7 +80,7 @@ class Node(Node2):
                              action_type,
                              action_name: str,
                              execute_callback: Callable,
-                             cancel_callback: Callable = None) -> ActionSingleServer:
+                             cancel_callback: Callable = None) -> ActionServer:
         """ create action server from node
 
         Args:
@@ -95,31 +93,8 @@ class Node(Node2):
             ActionSingleServer: server created
         """
 
-        return ActionSingleServer(self,
-                                  action_type,
-                                  action_name,
-                                  execute_callback,
-                                  cancel_callback=cancel_callback)
-
-    def create_action_queue_server(self,
-                                   action_type,
-                                   action_name: str,
-                                   execute_callback: Callable,
-                                   cancel_callback: Callable = None) -> ActionQueueServer:
-        """ create action queue server from node
-
-        Args:
-            action_type ([type]): action type (msg action)
-            action_name (str): action name
-            execute_callback ([type]): execute function
-            cancel_callback ([type], optional): cancel function. Defaults to None.
-
-        Returns:
-            ActionQueueServer: queue server created
-        """
-
-        return ActionQueueServer(self,
-                                 action_type,
-                                 action_name,
-                                 execute_callback,
-                                 cancel_callback=cancel_callback)
+        return ActionServer(self,
+                            action_type,
+                            action_name,
+                            execute_callback,
+                            cancel_callback=cancel_callback)
