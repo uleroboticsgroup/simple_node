@@ -19,7 +19,7 @@
 
 import time
 from threading import Thread
-from typing import Callable
+from typing import Callable, Type
 
 import rclpy
 from rclpy.node import Node as Node2
@@ -34,7 +34,7 @@ from simple_node.actions.action_server import ActionServer
 class Node(Node2):
     """ Node Class """
 
-    def __init__(self, node_name: str, namespace: str = "", executor: Executor = None):
+    def __init__(self, node_name: str, namespace: str = "", executor: Executor = None) -> None:
 
         super().__init__(node_name, namespace=namespace)
 
@@ -49,7 +49,7 @@ class Node(Node2):
         self._wake_thread = Thread(target=self._wake_node, daemon=True)
         self._wake_thread.start()
 
-    def _run_executor(self):
+    def _run_executor(self) -> None:
         """ run an executer with self (node) """
 
         self._executor.add_node(self)
@@ -58,12 +58,12 @@ class Node(Node2):
         finally:
             self._executor.shutdown()
 
-    def _wake_node(self):
+    def _wake_node(self) -> None:
         while rclpy.ok():
             self._executor.wake()
             time.sleep(1)
 
-    def join_spin(self):
+    def join_spin(self) -> None:
         """ wait for spin thread """
 
         try:
@@ -73,10 +73,19 @@ class Node(Node2):
             self.get_logger().info("Destroying node " + self.get_name())
             self.destroy_node()
 
-    def create_client(self, srv_type, srv_name: str) -> Client:
+    def create_client(
+            self,
+            srv_type: Type,
+            srv_name: str
+    ) -> Client:
         return super().create_client(srv_type, srv_name, callback_group=ReentrantCallbackGroup())
 
-    def create_action_client(self, action_type, action_name: str, feedback_cb: Callable = None) -> ActionClient:
+    def create_action_client(
+            self,
+            action_type: Type,
+            action_name: str,
+            feedback_cb: Callable = None
+    ) -> ActionClient:
         """ create action client from node
 
         Args:
@@ -89,11 +98,13 @@ class Node(Node2):
 
         return ActionClient(self, action_type, action_name, feedback_cb)
 
-    def create_action_server(self,
-                             action_type,
-                             action_name: str,
-                             execute_callback: Callable,
-                             cancel_callback: Callable = None) -> ActionServer:
+    def create_action_server(
+        self,
+            action_type: Type,
+            action_name: str,
+            execute_callback: Callable,
+            cancel_callback: Callable = None
+    ) -> ActionServer:
         """ create action server from node
 
         Args:
@@ -106,8 +117,10 @@ class Node(Node2):
             ActionSingleServer: server created
         """
 
-        return ActionServer(self,
-                            action_type,
-                            action_name,
-                            execute_callback,
-                            cancel_callback=cancel_callback)
+        return ActionServer(
+            self,
+            action_type,
+            action_name,
+            execute_callback,
+            cancel_callback=cancel_callback
+        )

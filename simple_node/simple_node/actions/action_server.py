@@ -31,12 +31,14 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 class ActionServer(ActionServer2):
     """ Action Server Class """
 
-    def __init__(self,
-                 node: Node,
-                 action_type,
-                 action_name: str,
-                 execute_callback: Callable,
-                 cancel_callback: Callable = None):
+    def __init__(
+        self,
+            node: Node,
+            action_type,
+            action_name: str,
+            execute_callback: Callable,
+            cancel_callback: Callable = None
+    ) -> None:
 
         self.__goal_lock = Lock()
         self.__user_execute_callback = execute_callback

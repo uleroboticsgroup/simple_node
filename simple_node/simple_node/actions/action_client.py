@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Callable
+from typing import Callable, Type, Any
 import time
 from threading import Thread, Lock
 from action_msgs.msg import GoalStatus
@@ -25,7 +25,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 class ActionClient(ActionClient2):
 
-    def __init__(self, node: Node, action_type, action_name: str, feedback_cb: Callable = None):
+    def __init__(self, node: Node, action_type: Type, action_name: str, feedback_cb: Callable = None) -> None:
         self._status = GoalStatus.STATUS_UNKNOWN
         self.__status_lock = Lock()
         self.__goal_handle = None
@@ -39,7 +39,7 @@ class ActionClient(ActionClient2):
         with self.__status_lock:
             return self._status
 
-    def _set_status(self, status: int):
+    def _set_status(self, status: int) -> None:
         with self.__status_lock:
             self._status = status
 
@@ -67,13 +67,13 @@ class ActionClient(ActionClient2):
     def is_terminated(self) -> bool:
         return (self.is_succeeded() or self.is_canceled() or self.is_aborted())
 
-    def wait_for_result(self):
+    def wait_for_result(self) -> None:
         self.__goal_thread.join()
 
-    def get_result(self):
+    def get_result(self) -> Any:
         return self.__result
 
-    def __send_goal(self, goal, feedback_cb: Callable = None):
+    def __send_goal(self, goal, feedback_cb: Callable = None) -> None:
 
         self.__result = None
 
@@ -118,7 +118,7 @@ class ActionClient(ActionClient2):
         self._set_status(get_result_future.result().status)
         self.__result = get_result_future.result().result
 
-    def send_goal(self, goal, feedback_cb: Callable = None):
+    def send_goal(self, goal, feedback_cb: Callable = None) -> None:
 
         _feedback_cb = self.feedback_cb
 
