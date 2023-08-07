@@ -27,6 +27,8 @@
 #include "simple_node/actions/action_client.hpp"
 #include "simple_node/actions/action_server.hpp"
 
+#include "rclcpp/node_options.hpp"
+
 namespace simple_node {
 
 class Node : public rclcpp::Node {
@@ -36,6 +38,7 @@ public:
   Node(std::string name, rclcpp::Executor *executor);
   Node(std::string name, std::string _namespace);
   Node(std::string name, std::string _namespace, rclcpp::Executor *executor);
+  Node(std::string name, std::string _namespace, const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
   ~Node();
 
   void join_spin();

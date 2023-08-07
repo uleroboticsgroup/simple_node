@@ -34,9 +34,29 @@ from simple_node.actions.action_server import ActionServer
 class Node(Node2):
     """ Node Class """
 
-    def __init__(self, node_name: str, namespace: str = "", executor: Executor = None) -> None:
+    def __init__(self, node_name: str,
+                        context = None,
+                        cli_args = None,
+                        namespace = "",
+                        use_global_arguments = True,
+                        enable_rosout = True,
+                        start_parameter_services = True,
+                        parameter_overrides = None,
+                        allow_undeclared_parameters = False,
+                        automatically_declare_parameters_from_overrides = False, 
+                        executor = None):
 
-        super().__init__(node_name, namespace=namespace)
+        super().__init__(node_name,
+                        context = context,
+                        cli_args = cli_args,
+                        namespace = namespace,
+                        use_global_arguments = use_global_arguments,
+                        enable_rosout=enable_rosout,
+                        start_parameter_services=start_parameter_services,
+                        parameter_overrides=parameter_overrides,
+                        allow_undeclared_parameters=allow_undeclared_parameters,
+                        automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides
+                        )
 
         if not executor:
             self._executor = MultiThreadedExecutor()
