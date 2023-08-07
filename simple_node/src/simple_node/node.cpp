@@ -35,6 +35,8 @@ Node::Node(std::string name, std::string _namespace, rclcpp::Executor *executor)
   this->executor = executor;
   this->spin_thread = new std::thread(&Node::run_executor, this);
 }
+Node::Node(std::string name, std::string _namespace, const rclcpp::NodeOptions &options):
+    rclcpp::Node(name, _namespace, options) {}
 
 Node::~Node() {
   delete this->executor;
