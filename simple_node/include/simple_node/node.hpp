@@ -34,11 +34,14 @@ namespace simple_node {
 class Node : public rclcpp::Node {
 
 public:
-  Node(std::string name);
-  Node(std::string name, rclcpp::Executor *executor);
-  Node(std::string name, std::string _namespace);
-  Node(std::string name, std::string _namespace, rclcpp::Executor *executor);
-  Node(std::string name, std::string _namespace, const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
+  Node(const std::string &name,
+       const rclcpp::NodeOptions &options = rclcpp::NodeOptions(),
+       rclcpp::Executor::SharedPtr executor =
+           std::make_shared<rclcpp::executors::MultiThreadedExecutor>());
+  Node(const std::string &name, const std::string &namespace_,
+       const rclcpp::NodeOptions &options = rclcpp::NodeOptions(),
+       rclcpp::Executor::SharedPtr executor =
+           std::make_shared<rclcpp::executors::MultiThreadedExecutor>());
   ~Node();
 
   void join_spin();
@@ -119,7 +122,7 @@ public:
 
 private:
   rclcpp::CallbackGroup::SharedPtr group;
-  rclcpp::Executor *executor;
+  rclcpp::Executor::SharedPtr executor;
   std::thread *spin_thread;
 
   void run_executor();

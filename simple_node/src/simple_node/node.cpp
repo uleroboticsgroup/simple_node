@@ -17,31 +17,22 @@
 
 using namespace simple_node;
 
-Node::Node(std::string name)
-    : Node(name, "", new rclcpp::executors::MultiThreadedExecutor()) {}
+Node::Node(const std::string &name, const rclcpp::NodeOptions &options,
+           const rclcpp::Executor::SharedPtr executor)
+    : Node(name, "", options, executor) {}
 
-Node::Node(std::string name, std::string _namespace)
-    : Node(name, _namespace, new rclcpp::executors::MultiThreadedExecutor()) {}
-
-Node::Node(std::string name, rclcpp::Executor *executor)
-    : Node(name, "", executor) {}
-
-Node::Node(std::string name, std::string _namespace, rclcpp::Executor *executor)
-    : rclcpp::Node(name, _namespace) {
+Node::Node(const std::string &name, const std::string &namespace_,
+           const rclcpp::NodeOptions &options,
+           rclcpp::Executor::SharedPtr executor)
+    : rclcpp::Node(name, namespace_, options), executor(executor) {
 
   rclcpp::CallbackGroup::SharedPtr group =
       this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
-  this->executor = executor;
   this->spin_thread = new std::thread(&Node::run_executor, this);
 }
-Node::Node(std::string name, std::string _namespace, const rclcpp::NodeOptions &options):
-    rclcpp::Node(name, _namespace, options) {}
 
-Node::~Node() {
-  delete this->executor;
-  delete this->spin_thread;
-}
+Node::~Node() { delete this->spin_thread; }
 
 void Node::join_spin() {
   this->spin_thread->join();

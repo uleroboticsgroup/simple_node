@@ -19,13 +19,15 @@
 
 import time
 from threading import Thread
-from typing import Callable, Type
+from typing import List, Callable, Type
 
 import rclpy
-from rclpy.node import Node as Node2
-from rclpy.executors import MultiThreadedExecutor, Executor
 from rclpy.client import Client
+from rclpy.context import Context
+from rclpy.node import Node as Node2
+from rclpy.parameter import Parameter
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor, Executor
 
 from simple_node.actions.action_client import ActionClient
 from simple_node.actions.action_server import ActionServer
@@ -34,29 +36,33 @@ from simple_node.actions.action_server import ActionServer
 class Node(Node2):
     """ Node Class """
 
-    def __init__(self, node_name: str,
-                        context = None,
-                        cli_args = None,
-                        namespace = "",
-                        use_global_arguments = True,
-                        enable_rosout = True,
-                        start_parameter_services = True,
-                        parameter_overrides = None,
-                        allow_undeclared_parameters = False,
-                        automatically_declare_parameters_from_overrides = False, 
-                        executor = None):
+    def __init__(
+        self,
+        node_name: str,
+        context: Context = None,
+        cli_args: List[str] = None,
+        namespace: str = "",
+        use_global_arguments: bool = True,
+        enable_rosout: bool = True,
+        start_parameter_services: bool = True,
+        parameter_overrides: List[Parameter] = None,
+        allow_undeclared_parameters: bool = False,
+        automatically_declare_parameters_from_overrides: bool = False,
+        executor: Executor = None
+    ) -> None:
 
-        super().__init__(node_name,
-                        context = context,
-                        cli_args = cli_args,
-                        namespace = namespace,
-                        use_global_arguments = use_global_arguments,
-                        enable_rosout=enable_rosout,
-                        start_parameter_services=start_parameter_services,
-                        parameter_overrides=parameter_overrides,
-                        allow_undeclared_parameters=allow_undeclared_parameters,
-                        automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides
-                        )
+        super().__init__(
+            node_name,
+            context=context,
+            cli_args=cli_args,
+            namespace=namespace,
+            use_global_arguments=use_global_arguments,
+            enable_rosout=enable_rosout,
+            start_parameter_services=start_parameter_services,
+            parameter_overrides=parameter_overrides,
+            allow_undeclared_parameters=allow_undeclared_parameters,
+            automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides
+        )
 
         if not executor:
             self._executor = MultiThreadedExecutor()
