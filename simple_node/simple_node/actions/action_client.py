@@ -25,7 +25,14 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 class ActionClient(ActionClient2):
 
-    def __init__(self, node: Node, action_type: Type, action_name: str, feedback_cb: Callable = None) -> None:
+    def __init__(
+        self,
+        node: Node,
+        action_type: Type,
+        action_name: str,
+        feedback_cb: Callable = None
+    ) -> None:
+
         self._status = GoalStatus.STATUS_UNKNOWN
         self.__status_lock = Lock()
         self.__goal_handle = None

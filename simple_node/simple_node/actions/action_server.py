@@ -33,11 +33,11 @@ class ActionServer(ActionServer2):
 
     def __init__(
         self,
-            node: Node,
-            action_type,
-            action_name: str,
-            execute_callback: Callable,
-            cancel_callback: Callable = None
+        node: Node,
+        action_type,
+        action_name: str,
+        execute_callback: Callable,
+        cancel_callback: Callable = None
     ) -> None:
 
         self.__goal_lock = Lock()
