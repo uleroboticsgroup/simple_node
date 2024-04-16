@@ -16,8 +16,8 @@
 
 """ Custom action server that add goals to a queue """
 
-from threading import Lock
 from typing import Callable
+from threading import Lock, Thread
 
 from rclpy.node import Node
 from rclpy.action import ActionServer as ActionServer2
@@ -41,6 +41,7 @@ class ActionServer(ActionServer2):
         self.__goal_lock = Lock()
         self.__user_execute_callback = execute_callback
         self.__user_cancel_callback = cancel_callback
+        self.__cancel_thread = None
         self._goal_handle = None
         self.node = node
 
@@ -78,6 +79,10 @@ class ActionServer(ActionServer2):
     def __cancel_callback(self, goal_handle: ServerGoalHandle) -> int:
         """ cancel calback """
 
+        if self.__user_cancel_callback is not None:
+            self.__cancel_thread = Thread(target=self.__user_cancel_callback)
+            self.__cancel_thread.start()
+
         return CancelResponse.ACCEPT
 
     def __execute_callback(self, goal_handle: ServerGoalHandle):
@@ -85,11 +90,11 @@ class ActionServer(ActionServer2):
             execute callback
         """
 
+        self.__cancel_thread = None
         results = self.__user_execute_callback(self._goal_handle)
+
+        if self.__cancel_thread is not None:
+            self.__cancel_thread.join()
+
         self._goal_handle = None
-
-        if goal_handle.is_cancel_requested:
-            if self.__user_cancel_callback is not None:
-                self.__user_cancel_callback()
-
         return results

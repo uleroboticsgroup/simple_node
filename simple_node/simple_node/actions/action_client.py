@@ -34,6 +34,7 @@ class ActionClient(ActionClient2):
     ) -> None:
 
         self._action_done_event = Event()
+        self._cancel_done_event = Event()
 
         self._result = None
         self._status = GoalStatus.STATUS_UNKNOWN
@@ -69,7 +70,8 @@ class ActionClient(ActionClient2):
         return self.get_status() == GoalStatus.STATUS_ABORTED
 
     def is_working(self) -> bool:
-        return not self.is_terminated() and self.get_status() != GoalStatus.STATUS_UNKNOWN
+        with self._goal_handle_lock:
+            return self._goal_handle is not None
 
     def is_terminated(self) -> bool:
         return (self.is_succeeded() or self.is_canceled() or self.is_aborted())
@@ -83,6 +85,8 @@ class ActionClient(ActionClient2):
 
     def send_goal(self, goal, feedback_cb: Callable = None) -> None:
 
+        with self._goal_handle_lock:
+            self._goal_handle = None
         self._result = None
         self._set_status(GoalStatus.STATUS_UNKNOWN)
 
@@ -108,4 +112,13 @@ class ActionClient(ActionClient2):
     def cancel_goal(self) -> None:
         with self._goal_handle_lock:
             if self._goal_handle is not None:
-                self._goal_handle.cancel_goal()
+
+                cancel_goal_future = self._cancel_goal_async(
+                    self._goal_handle)
+                cancel_goal_future.add_done_callback(self._cancel_done)
+
+                self._cancel_done_event.clear()
+                self._cancel_done_event.wait()
+
+    def _cancel_done(self, future) -> None:
+        self._cancel_done_event.set()

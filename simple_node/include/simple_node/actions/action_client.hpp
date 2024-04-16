@@ -68,6 +68,7 @@ public:
 
   void send_goal(Goal goal, FeedbackCallback feedback_cb = nullptr) {
 
+    this->goal_handle = nullptr;
     this->result = nullptr;
     this->set_status(rclcpp_action::ResultCode::UNKNOWN);
 
@@ -93,7 +94,11 @@ public:
   void cancel_goal() {
     std::lock_guard<std::mutex> lock(this->goal_handle_mutex);
     if (this->goal_handle) {
-      this->async_cancel_goal(this->goal_handle);
+      this->async_cancel_goal(this->goal_handle,
+                              std::bind(&ActionClient::cancel_done, this));
+
+      std::unique_lock<std::mutex> lock(this->action_done_mutex);
+      this->action_done_cond.wait(lock);
     }
   }
 
@@ -118,8 +123,8 @@ public:
   }
 
   bool is_working() {
-    return !this->is_terminated() &&
-           this->get_status() != rclcpp_action::ResultCode::UNKNOWN;
+    std::lock_guard<std::mutex> lock(this->goal_handle_mutex);
+    return this->goal_handle != nullptr;
   }
 
   bool is_terminated() {
@@ -129,6 +134,9 @@ public:
 private:
   std::condition_variable action_done_cond;
   std::mutex action_done_mutex;
+
+  std::condition_variable cancel_done_cond;
+  std::mutex cancel_done_mutex;
 
   Result result;
   rclcpp_action::ResultCode status;
@@ -155,6 +163,8 @@ private:
     this->set_status(result.code);
     this->action_done_cond.notify_one();
   }
+
+  void cancel_done() { this->action_done_cond.notify_all(); }
 };
 
 } // namespace actions

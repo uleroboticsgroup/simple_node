@@ -88,6 +88,7 @@ protected:
 private:
   UserExecuteCallback execute_callback;
   UserCancelCallback cancel_callback;
+  std::unique_ptr<std::thread> cancel_thread;
   std::mutex handle_accepted_mtx;
 
   rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID &uuid,
@@ -113,13 +114,20 @@ private:
   rclcpp_action::CancelResponse
   handle_cancel(const std::shared_ptr<GoalHandle> goal_handle) {
     (void)goal_handle;
+
+    this->cancel_thread = std::make_unique<std::thread>(this->cancel_callback);
+
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
   void handle_execute(const std::shared_ptr<GoalHandle> goal_handle) {
-
+    this->cancel_thread = nullptr;
     this->execute_callback(this->goal_handle);
     this->goal_handle = nullptr;
+
+    if (this->cancel_thread != nullptr) {
+      this->cancel_thread->join();
+    }
   }
 };
 } // namespace actions
