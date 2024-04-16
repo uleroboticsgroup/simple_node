@@ -14,9 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from threading import Event, RLock
 from typing import Callable, Type, Any
-import time
-from threading import Thread, Lock
+
 from action_msgs.msg import GoalStatus
 from rclpy.action import ActionClient as ActionClient2
 from rclpy.node import Node
@@ -33,31 +33,31 @@ class ActionClient(ActionClient2):
         feedback_cb: Callable = None
     ) -> None:
 
+        self._action_done_event = Event()
+
+        self._result = None
         self._status = GoalStatus.STATUS_UNKNOWN
-        self.__status_lock = Lock()
-        self.__goal_handle = None
-        self.__goal_thread = None
-        self.__result = None
+        self._status_lock = RLock()
+
+        self._goal_handle = None
+        self._goal_handle_lock = RLock()
+
         self.feedback_cb = feedback_cb
-        super().__init__(node, action_type, action_name,
-                         callback_group=ReentrantCallbackGroup())
+
+        super().__init__(
+            node,
+            action_type,
+            action_name,
+            callback_group=ReentrantCallbackGroup()
+        )
 
     def get_status(self) -> int:
-        with self.__status_lock:
+        with self._status_lock:
             return self._status
 
     def _set_status(self, status: int) -> None:
-        with self.__status_lock:
+        with self._status_lock:
             self._status = status
-
-    def is_accepted(self) -> bool:
-        return self.get_status() == GoalStatus.STATUS_ACCEPTED
-
-    def is_executing(self) -> bool:
-        return self.get_status() == GoalStatus.STATUS_EXECUTING
-
-    def is_canceling(self) -> bool:
-        return self.get_status() == GoalStatus.STATUS_CANCELING
 
     def is_succeeded(self) -> bool:
         return self.get_status() == GoalStatus.STATUS_SUCCEEDED
@@ -69,96 +69,43 @@ class ActionClient(ActionClient2):
         return self.get_status() == GoalStatus.STATUS_ABORTED
 
     def is_working(self) -> bool:
-        return (self.is_executing() or self.is_canceling() or self.is_accepted())
+        return not self.is_terminated() and self.get_status() != GoalStatus.STATUS_UNKNOWN
 
     def is_terminated(self) -> bool:
         return (self.is_succeeded() or self.is_canceled() or self.is_aborted())
 
     def wait_for_result(self) -> None:
-        self.__goal_thread.join()
+        self._action_done_event.clear()
+        self._action_done_event.wait()
 
     def get_result(self) -> Any:
-        return self.__result
-
-    def __send_goal(self, goal, feedback_cb: Callable = None) -> None:
-
-        self.__result = None
-
-        send_goal_future = self.send_goal_async(
-            goal, feedback_callback=feedback_cb)
-
-        # wait for acceptance
-        while not send_goal_future.done():
-            time.sleep(0.01)
-
-        # check acceptance
-        self.__goal_handle = send_goal_future.result()
-        if not self.__goal_handle.accepted:
-
-            # change status
-            if self.is_canceled():
-                return
-            self._set_status(GoalStatus.STATUS_ABORTED)
-            return
-
-        # change status
-        if self.is_canceled():
-            return
-        self._set_status(GoalStatus.STATUS_ACCEPTED)
-
-        # get result
-        get_result_future = self.__goal_handle.get_result_async()
-
-        # change status
-        if self.is_canceled():
-            return
-        self._set_status(GoalStatus.STATUS_EXECUTING)
-
-        # wait for result
-        while not get_result_future.done():
-            time.sleep(0.01)
-
-        # change status
-        if self.is_canceled():
-            return
-
-        self._set_status(get_result_future.result().status)
-        self.__result = get_result_future.result().result
+        return self._result
 
     def send_goal(self, goal, feedback_cb: Callable = None) -> None:
 
-        _feedback_cb = self.feedback_cb
+        self._result = None
+        self._set_status(GoalStatus.STATUS_UNKNOWN)
 
+        _feedback_cb = self.feedback_cb
         if not feedback_cb is None:
             _feedback_cb = feedback_cb
 
-        self.__goal_thread = Thread(
-            target=self.__send_goal, args=(goal, _feedback_cb))
-        self._set_status(GoalStatus.STATUS_UNKNOWN)
-        self.__goal_thread.start()
+        send_goal_future = self.send_goal_async(
+            goal, feedback_callback=_feedback_cb)
+        send_goal_future.add_done_callback(self._goal_response_callback)
 
-    def __cancel_goal(self) -> bool:
+    def _goal_response_callback(self, future) -> None:
+        with self._goal_handle_lock:
+            self._goal_handle = future.result()
+            get_result_future = self._goal_handle.get_result_async()
+            get_result_future.add_done_callback(self._get_result_callback)
 
-        old_status = self.get_status()
+    def _get_result_callback(self, future) -> None:
+        self._result = future.result().result
+        self._set_status(future.result().status)
+        self._action_done_event.set()
 
-        cancel_goal_future = self._cancel_goal_async(self.__goal_handle)
-        self._set_status(GoalStatus.STATUS_CANCELING)
-
-        while not cancel_goal_future.done():
-            time.sleep(0.01)
-
-        result = cancel_goal_future.result()
-        if len(result.goals_canceling) == 0:
-            self._set_status(old_status)
-            return False
-
-        self._set_status(GoalStatus.STATUS_CANCELED)
-
-        return True
-
-    def cancel_goal(self) -> bool:
-        if self.__goal_handle:
-            return self.__cancel_goal()
-
-        else:
-            return False
+    def cancel_goal(self) -> None:
+        with self._goal_handle_lock:
+            if self._goal_handle is not None:
+                self._goal_handle.cancel_goal()

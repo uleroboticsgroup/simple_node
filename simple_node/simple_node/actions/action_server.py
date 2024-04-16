@@ -16,10 +16,8 @@
 
 """ Custom action server that add goals to a queue """
 
-import time
-from typing import Callable
 from threading import Lock
-from threading import Thread
+from typing import Callable
 
 from rclpy.node import Node
 from rclpy.action import ActionServer as ActionServer2
@@ -44,15 +42,16 @@ class ActionServer(ActionServer2):
         self.__user_execute_callback = execute_callback
         self.__user_cancel_callback = cancel_callback
         self._goal_handle = None
-        self.results = None
         self.node = node
 
-        super().__init__(node, action_type, action_name,
-                         execute_callback=self.__execute_callback,
-                         goal_callback=self.__goal_callback,
-                         handle_accepted_callback=self.__handle_accepted_callback,
-                         cancel_callback=self.__cancel_callback,
-                         callback_group=ReentrantCallbackGroup())
+        super().__init__(
+            node, action_type, action_name,
+            execute_callback=self.__execute_callback,
+            goal_callback=self.__goal_callback,
+            handle_accepted_callback=self.__handle_accepted_callback,
+            cancel_callback=self.__cancel_callback,
+            callback_group=ReentrantCallbackGroup()
+        )
 
     def is_working(self) -> bool:
         return self._goal_handle is not None
@@ -86,19 +85,11 @@ class ActionServer(ActionServer2):
             execute callback
         """
 
-        t = Thread(target=self.__execute)
-        t.start()
-
-        while t.is_alive():
-
-            if goal_handle.is_cancel_requested:
-                if self.__user_cancel_callback is not None:
-                    self.__user_cancel_callback()
-
-            time.sleep(1)
-
-        return self.results
-
-    def __execute(self) -> None:
-        self.results = self.__user_execute_callback(self._goal_handle)
+        results = self.__user_execute_callback(self._goal_handle)
         self._goal_handle = None
+
+        if goal_handle.is_cancel_requested:
+            if self.__user_cancel_callback is not None:
+                self.__user_cancel_callback()
+
+        return results

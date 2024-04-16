@@ -118,23 +118,6 @@ private:
 
   void handle_execute(const std::shared_ptr<GoalHandle> goal_handle) {
 
-    (void)goal_handle;
-
-    std::thread(std::bind(&ActionServer::execute, this)).detach();
-
-    while (this->goal_handle != nullptr) {
-      if (this->goal_handle->is_canceling()) {
-
-        if (this->cancel_callback != nullptr) {
-          this->cancel_callback();
-        }
-        break;
-      }
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-  }
-
-  void execute() {
     this->execute_callback(this->goal_handle);
     this->goal_handle = nullptr;
   }

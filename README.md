@@ -2,12 +2,11 @@
 
 This wrap uses the spin of an executor in a new thread. As a result, the calls of services and actions can be used synchronously. Besides, this node also includes predefined action servers and one client to make its use more user-friendly to developers.
 
-
 ## Examples
 
 ### Node
 
-This example shows how to create a node. To block the node, ```join_spin``` is used, which blocks the main thread till the thread of the spin ends.
+This example shows how to create a node. To block the node, `join_spin` is used, which blocks the main thread till the thread of the spin ends.
 
 ```python
 from simple_node import Node
@@ -17,13 +16,10 @@ class MyNode(Node):
     def __init__(self):
         super().__init__("my_node")
 
-def main(args=None):
-    rclpy.init(args=args)
-
+def main():
+    rclpy.init()
     node = MyNode()
-
     node.join_spin()
-
     rclpy.shutdown()
 
 
