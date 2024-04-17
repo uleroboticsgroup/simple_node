@@ -36,13 +36,10 @@ class Node : public rclcpp::Node {
 public:
   Node(const std::string &name,
        const rclcpp::NodeOptions &options = rclcpp::NodeOptions(),
-       rclcpp::Executor::SharedPtr executor =
-           std::make_shared<rclcpp::executors::MultiThreadedExecutor>());
+       rclcpp::Executor::SharedPtr executor = nullptr);
   Node(const std::string &name, const std::string &namespace_,
        const rclcpp::NodeOptions &options = rclcpp::NodeOptions(),
-       rclcpp::Executor::SharedPtr executor =
-           std::make_shared<rclcpp::executors::MultiThreadedExecutor>());
-  ~Node();
+       rclcpp::Executor::SharedPtr executor = nullptr);
 
   void join_spin();
 
@@ -123,7 +120,7 @@ public:
 private:
   rclcpp::CallbackGroup::SharedPtr group;
   rclcpp::Executor::SharedPtr executor;
-  std::thread *spin_thread;
+  std::unique_ptr<std::thread> spin_thread;
 
   void run_executor();
 

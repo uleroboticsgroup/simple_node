@@ -161,6 +161,10 @@ private:
   void result_callback(const typename GoalHandle::WrappedResult &result) {
     this->result = result.result;
     this->set_status(result.code);
+
+    std::lock_guard<std::mutex> lock(this->goal_handle_mutex);
+    this->goal_handle = nullptr;
+
     this->action_done_cond.notify_one();
   }
 

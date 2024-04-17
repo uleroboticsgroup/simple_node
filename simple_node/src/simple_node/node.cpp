@@ -26,13 +26,16 @@ Node::Node(const std::string &name, const std::string &namespace_,
            rclcpp::Executor::SharedPtr executor)
     : rclcpp::Node(name, namespace_, options), executor(executor) {
 
+  if (this->executor == nullptr) {
+    this->executor =
+        std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+  }
+
   rclcpp::CallbackGroup::SharedPtr group =
       this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
-  this->spin_thread = new std::thread(&Node::run_executor, this);
+  this->spin_thread = std::make_unique<std::thread>(&Node::run_executor, this);
 }
-
-Node::~Node() { delete this->spin_thread; }
 
 void Node::join_spin() {
   this->spin_thread->join();
