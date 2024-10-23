@@ -97,8 +97,8 @@ public:
       this->async_cancel_goal(this->goal_handle,
                               std::bind(&ActionClient::cancel_done, this));
 
-      std::unique_lock<std::mutex> lock(this->action_done_mutex);
-      this->action_done_cond.wait(lock);
+      std::unique_lock<std::mutex> lock(this->cancel_done_mutex);
+      this->cancel_done_cond.wait(lock);
     }
   }
 
@@ -168,7 +168,7 @@ private:
     this->action_done_cond.notify_one();
   }
 
-  void cancel_done() { this->action_done_cond.notify_all(); }
+  void cancel_done() { this->cancel_done_cond.notify_all(); }
 };
 
 } // namespace actions
