@@ -77,5 +77,5 @@ class MyNode(Node):
         self.__action_client.send_goal(goal)
         self.__action_client.wait_for_result()
 
-        self.__action_client.is_succeeded():
+        self.__action_client.is_succeeded()
 ```
