@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-""" ROS2 Node to simulate ROS1 Node """
+"""ROS2 Node to simulate ROS1 Node"""
 
 
 import time

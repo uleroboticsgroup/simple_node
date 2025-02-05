@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-""" Custom action server that add goals to a queue """
+"""Custom action server that add goals to a queue"""
 
 from typing import Callable
 from threading import Lock, Thread
