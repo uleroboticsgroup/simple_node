@@ -27,7 +27,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 
 class ActionServer(ActionServer2):
-    """ Action Server Class """
+    """Action Server Class"""
 
     def __init__(
         self,
@@ -35,7 +35,7 @@ class ActionServer(ActionServer2):
         action_type,
         action_name: str,
         execute_callback: Callable,
-        cancel_callback: Callable = None
+        cancel_callback: Callable = None,
     ) -> None:
 
         self.__goal_lock = Lock()
@@ -46,27 +46,29 @@ class ActionServer(ActionServer2):
         self.node = node
 
         super().__init__(
-            node, action_type, action_name,
+            node,
+            action_type,
+            action_name,
             execute_callback=self.__execute_callback,
             goal_callback=self.__goal_callback,
             handle_accepted_callback=self.__handle_accepted_callback,
             cancel_callback=self.__cancel_callback,
-            callback_group=ReentrantCallbackGroup()
+            callback_group=ReentrantCallbackGroup(),
         )
 
     def is_working(self) -> bool:
         return self._goal_handle is not None
 
     def __goal_callback(self, goal_request) -> int:
-        """ goal callback """
+        """goal callback"""
 
         return GoalResponse.ACCEPT
 
     def __handle_accepted_callback(self, goal_handle: ServerGoalHandle) -> None:
         """
-            handle accepted calback for a single goal server
-            only one goal can be treated
-            if other goal is send, old goal is aborted and replaced with the new one
+        handle accepted calback for a single goal server
+        only one goal can be treated
+        if other goal is send, old goal is aborted and replaced with the new one
         """
 
         with self.__goal_lock:
@@ -77,7 +79,7 @@ class ActionServer(ActionServer2):
             self._goal_handle.execute()
 
     def __cancel_callback(self, goal_handle: ServerGoalHandle) -> int:
-        """ cancel calback """
+        """cancel calback"""
 
         if self.__user_cancel_callback is not None:
             self.__cancel_thread = Thread(target=self.__user_cancel_callback)
@@ -87,7 +89,7 @@ class ActionServer(ActionServer2):
 
     def __execute_callback(self, goal_handle: ServerGoalHandle):
         """
-            execute callback
+        execute callback
         """
 
         self.__cancel_thread = None

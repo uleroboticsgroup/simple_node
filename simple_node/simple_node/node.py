@@ -34,7 +34,7 @@ from simple_node.actions.action_server import ActionServer
 
 
 class Node(Node2):
-    """ Node Class """
+    """Node Class"""
 
     def __init__(
         self,
@@ -48,7 +48,7 @@ class Node(Node2):
         parameter_overrides: List[Parameter] = None,
         allow_undeclared_parameters: bool = False,
         automatically_declare_parameters_from_overrides: bool = False,
-        executor: Executor = None
+        executor: Executor = None,
     ) -> None:
 
         super().__init__(
@@ -61,7 +61,7 @@ class Node(Node2):
             start_parameter_services=start_parameter_services,
             parameter_overrides=parameter_overrides,
             allow_undeclared_parameters=allow_undeclared_parameters,
-            automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides
+            automatically_declare_parameters_from_overrides=automatically_declare_parameters_from_overrides,
         )
 
         if not executor:
@@ -76,7 +76,7 @@ class Node(Node2):
         self._wake_thread.start()
 
     def _run_executor(self) -> None:
-        """ run an executer with self (node) """
+        """run an executer with self (node)"""
 
         self._executor.add_node(self)
         try:
@@ -90,7 +90,7 @@ class Node(Node2):
             time.sleep(1)
 
     def join_spin(self) -> None:
-        """ wait for spin thread """
+        """wait for spin thread"""
 
         try:
             self._spin_thread.join()
@@ -99,20 +99,15 @@ class Node(Node2):
             self.get_logger().info("Destroying node " + self.get_name())
             self.destroy_node()
 
-    def create_client(
-        self,
-        srv_type: Type,
-        srv_name: str
-    ) -> Client:
-        return super().create_client(srv_type, srv_name, callback_group=ReentrantCallbackGroup())
+    def create_client(self, srv_type: Type, srv_name: str) -> Client:
+        return super().create_client(
+            srv_type, srv_name, callback_group=ReentrantCallbackGroup()
+        )
 
     def create_action_client(
-        self,
-        action_type: Type,
-        action_name: str,
-        feedback_cb: Callable = None
+        self, action_type: Type, action_name: str, feedback_cb: Callable = None
     ) -> ActionClient:
-        """ create action client from node
+        """create action client from node
 
         Args:
             action_type ([type]): action type (msg action)
@@ -129,9 +124,9 @@ class Node(Node2):
         action_type: Type,
         action_name: str,
         execute_callback: Callable,
-        cancel_callback: Callable = None
+        cancel_callback: Callable = None,
     ) -> ActionServer:
-        """ create action server from node
+        """create action server from node
 
         Args:
             action_type ([type]): action type (msg action)
@@ -148,5 +143,5 @@ class Node(Node2):
             action_type,
             action_name,
             execute_callback,
-            cancel_callback=cancel_callback
+            cancel_callback=cancel_callback,
         )

@@ -30,7 +30,7 @@ class ActionClient(ActionClient2):
         node: Node,
         action_type: Type,
         action_name: str,
-        feedback_cb: Callable = None
+        feedback_cb: Callable = None,
     ) -> None:
 
         self._action_done_event = Event()
@@ -46,10 +46,7 @@ class ActionClient(ActionClient2):
         self.feedback_cb = feedback_cb
 
         super().__init__(
-            node,
-            action_type,
-            action_name,
-            callback_group=ReentrantCallbackGroup()
+            node, action_type, action_name, callback_group=ReentrantCallbackGroup()
         )
 
     def get_status(self) -> int:
@@ -74,7 +71,7 @@ class ActionClient(ActionClient2):
             return self._goal_handle is not None
 
     def is_terminated(self) -> bool:
-        return (self.is_succeeded() or self.is_canceled() or self.is_aborted())
+        return self.is_succeeded() or self.is_canceled() or self.is_aborted()
 
     def wait_for_result(self) -> None:
         self._action_done_event.clear()
@@ -94,8 +91,7 @@ class ActionClient(ActionClient2):
         if not feedback_cb is None:
             _feedback_cb = feedback_cb
 
-        send_goal_future = self.send_goal_async(
-            goal, feedback_callback=_feedback_cb)
+        send_goal_future = self.send_goal_async(goal, feedback_callback=_feedback_cb)
         send_goal_future.add_done_callback(self._goal_response_callback)
 
     def _goal_response_callback(self, future) -> None:
@@ -113,8 +109,7 @@ class ActionClient(ActionClient2):
         with self._goal_handle_lock:
             if self._goal_handle is not None:
 
-                cancel_goal_future = self._cancel_goal_async(
-                    self._goal_handle)
+                cancel_goal_future = self._cancel_goal_async(self._goal_handle)
                 cancel_goal_future.add_done_callback(self._cancel_done)
 
                 self._cancel_done_event.clear()

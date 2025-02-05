@@ -1,2 +1,1 @@
-
-from .node import Node
+from simple_node.node import Node
